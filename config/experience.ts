@@ -16,12 +16,31 @@ export interface ExperienceInterface {
 
 export const experiences: ExperienceInterface[] = [
   {
+    id: "kimaru",
+    position: "Software Engineer",
+    company: "Kimaru.ai",
+    location: "Remote",
+    startDate: new Date("2026-05-31"),
+    endDate: new Date("2026-04-01"),
+    description: [
+      "Contributed to a client project from India - delivered them a website based on Next.JS and FastAPI.",
+      "The project involved building a planning system for looms and carpets with optimization algorithms reducing wastage on yarn and manual labour.",
+    ],
+    achievements: [
+      "The project reduced the yarn wastage by 23% and reducing the manual labour time to enhance productivity.",
+      "Kimaru signed an annual subscription contract with the client and the project is being used by company employees."
+    ],
+    skills: ["Next.js", "FastAPI", "LLMs", "React", "Python"],
+    companyUrl: "https://www.kimaru.ai",
+    logo: "/experience/logo-kimaru.png",
+  },
+  {
     id: "quark",
     position: "AI Engineer",
     company: "Quark Inc",
     location: "Remote",
     startDate: new Date("2025-07-01"),
-    endDate: new Date("2025-09-21"),
+    endDate: new Date("2026-03-21"),
     description: [
       "Contributing to client projects related to Image Recognition, Object Detection etc.",
       "Leading the migration of the UI of company's website from PHP to NextJS.",
