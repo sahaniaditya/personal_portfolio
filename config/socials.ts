@@ -22,8 +22,8 @@ export const SocialLinks: SocialInterface[] = [
   },
   {
     name: "Gmail",
-    username: "b22cs003@iitj.ac.in",
+    username: "adityasahani893@gmail.com",
     icon: Icons.gmail,
-    link: "mailto:b22cs003@iitj.ac.in",
+    link: "mailto:adityasahani893@gmail.com",
   },
 ];
