@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 
 import { experiences } from "@/config/experience";
 import { Projects } from "@/config/projects";
-import { skills } from "@/config/skills";
+import { skillGroups } from "@/config/skills";
 import { SocialLinks } from "@/config/socials";
 
 import "./portfolio.css";
@@ -38,7 +38,7 @@ const navItems = [
 ];
 
 const heroStats = [
-  { value: "8.56", label: "CGPA · IIT Jodhpur" },
+  { value: "5+", label: "companies & internships" },
   { value: `${Projects.length}+`, label: "projects shipped" },
   { value: "∞", label: "cups of coffee" },
 ];
@@ -50,20 +50,6 @@ const experience = experiences.map((job) => ({
   period: formatPeriod(job.startDate, job.endDate),
   summary: job.description.join(" "),
   stack: job.skills,
-}));
-
-// Flat skill list grouped into categories for the toolbox cards.
-const SKILL_GROUPS: { tag: string; category: string; match: string[] }[] = [
-  { tag: "~/languages", category: "Languages", match: ["Python", "Typescript", "Javascript", "HTML 5", "CSS 3"] },
-  { tag: "~/frontend", category: "Frontend", match: ["React", "Next.js", "Tailwind CSS", "Material UI", "Bootstrap", "Redux", "React Native"] },
-  { tag: "~/backend", category: "Backend & Data", match: ["Node.js", "express.js", "MongoDB", "MySQL"] },
-  { tag: "~/ai-infra", category: "AI & Cloud", match: ["LLMs", "AWS", "Netlify"] },
-];
-const skillNames = skills.map((s) => s.name);
-const skillGroups = SKILL_GROUPS.map((g) => ({
-  tag: g.tag,
-  category: g.category,
-  items: g.match.filter((m) => skillNames.includes(m)),
 }));
 
 // Projects from config.
@@ -114,6 +100,9 @@ const launches = [
     link: "https://github.com/sahaniaditya/FoodBuddy",
   },
 ];
+
+// Count for the "shipped products" status card, zero-padded (e.g. "04").
+const shippedCount = String(launches.length).padStart(2, "0");
 
 const socials = [
   ...SocialLinks.map((s) => ({ label: `${s.name} →`, href: s.link })),
@@ -365,10 +354,25 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* terminal card */}
-          <div data-reveal className="acp-term-wrap">
-            <div className="acp-term-glow" />
-            <div className="acp-term">
+          {/* shipped-products card + terminal */}
+          <div className="acp-hero-right">
+            <a href="#launches" data-reveal className="acp-ship-card">
+              <span className="acp-ship-card-left">
+                <span className="acp-ship-pulse" />
+                <span className="acp-ship-card-text">
+                  <span className="acp-ship-card-title">shipped products</span>
+                  <span className="acp-ship-card-sub">real products, live in production</span>
+                </span>
+              </span>
+              <span className="acp-ship-card-badge">
+                <span className="acp-ship-card-num">{shippedCount}</span>
+                <span className="acp-ship-card-live">live</span>
+                <span className="acp-ship-arrow">→</span>
+              </span>
+            </a>
+            <div data-reveal className="acp-term-wrap">
+              <div className="acp-term-glow" />
+              <div className="acp-term">
               <div className="acp-term-bar">
                 <span className="acp-dot" style={{ background: "#ff5f56" }} />
                 <span className="acp-dot" style={{ background: "#ffbd2e" }} />
@@ -383,7 +387,7 @@ export default function HomePage() {
                 <div style={{ color: "var(--text)" }}>{"{"}</div>
                 <div className="ind"><span style={{ color: "var(--cyan)" }}>&quot;role&quot;</span>: <span style={{ color: "#ffd479" }}>&quot;Full Stack + AI/ML Engineer&quot;</span>,</div>
                 <div className="ind"><span style={{ color: "var(--cyan)" }}>&quot;focus&quot;</span>: [<span style={{ color: "#ffd479" }}>&quot;web&quot;</span>, <span style={{ color: "#ffd479" }}>&quot;AI/ML&quot;</span>, <span style={{ color: "#ffd479" }}>&quot;systems&quot;</span>],</div>
-                <div className="ind"><span style={{ color: "var(--cyan)" }}>&quot;based&quot;</span>: <span style={{ color: "#ffd479" }}>&quot;IIT Jodhpur, India&quot;</span>,</div>
+                <div className="ind"><span style={{ color: "var(--cyan)" }}>&quot;based&quot;</span>: <span style={{ color: "#ffd479" }}>&quot;India&quot;</span>,</div>
                 <div className="ind"><span style={{ color: "var(--cyan)" }}>&quot;shipping&quot;</span>: <span style={{ color: "var(--accent)" }}>true</span></div>
                 <div style={{ color: "var(--text)" }}>{"}"}</div>
                 <div style={{ color: "var(--muted)", marginTop: 10 }}>
@@ -395,6 +399,7 @@ export default function HomePage() {
                 </div>
               </div>
               <div className="acp-scan" />
+              </div>
             </div>
           </div>
         </section>
