@@ -23,14 +23,14 @@ export const experiences: ExperienceInterface[] = [
     startDate: new Date("2026-05-31"),
     endDate: new Date("2026-04-01"),
     description: [
-      "Contributed to a client project from India - delivered them a website based on Next.JS and FastAPI.",
-      "The project involved building a planning system for looms and carpets with optimization algorithms reducing wastage on yarn and manual labour.",
+      "Architected and built a production-grade supply chain optimization platform for a large carpet manufacturer, automating yarn requirement planning and generating optimized loom production schedules.",
+      "Developed scalable full-stack services using FastAPI, Next.js, TypeScript, PostgreSQL, and Docker, and deployed them on AWS using containerized infrastructure.",
     ],
     achievements: [
-      "The project reduced the yarn wastage by 23% and reducing the manual labour time to enhance productivity.",
-      "Kimaru signed an annual subscription contract with the client and the project is being used by company employees."
+      "Replaced manual planning workflows with an intelligent optimization engine, minimizing raw material wastage and improving operational scalability.",
+      "Led a team of 5+ software engineering interns, owning technical architecture, feature planning, code reviews, and engineering best practices.",
     ],
-    skills: ["Next.js", "FastAPI", "LLMs", "React", "Python"],
+    skills: ["Next.js", "FastAPI", "Typescript", "PostgreSQL", "Docker", "AWS", "Python"],
     companyUrl: "https://www.kimaru.ai",
     logo: "/experience/logo-kimaru.png",
   },
@@ -38,18 +38,18 @@ export const experiences: ExperienceInterface[] = [
     id: "quark",
     position: "AI Engineer",
     company: "Quark Inc",
-    location: "Remote",
+    location: "Japan",
     startDate: new Date("2025-07-01"),
-    endDate: new Date("2026-03-21"),
+    endDate: new Date("2026-04-01"),
     description: [
-      "Contributing to client projects related to Image Recognition, Object Detection etc.",
-      "Leading the migration of the UI of company's website from PHP to NextJS.",
+      "Delivered enterprise AI solutions for Japanese clients by building LLM-powered applications for knowledge management, document intelligence, and business process automation.",
+      "Built an AI agent for automated 2D CAD-to-3D model conversion, combining LLM reasoning with geometric processing and human-in-the-loop validation to generate production-grade parametric 3D models.",
     ],
     achievements: [
-      "Delivered an Image Detection model to a client to sort between different classes of image, to reduce the manual work.",
-      "Led the migration of the UI of company's website from PHP to NextJS., improving frontend consistency and performance."
+      "Developed Retrieval-Augmented Generation (RAG) systems using LangChain, OpenAI APIs, Google Gemini, and ChromaDB, enabling semantic search across enterprise knowledge bases.",
+      "Designed and deployed scalable AI applications using FastAPI, React, Node.js, Docker, and AWS, integrating vector databases, secure APIs, and cloud-native infrastructure.",
     ],
-    skills: ["Next.js", "LLMs", "Computer Vision", "Python"],
+    skills: ["LLMs", "FastAPI", "React", "Node.js", "Docker", "AWS", "Python"],
     companyUrl: "https://www.quark-inc.com",
     logo: "/logo.png",
   },
@@ -76,18 +76,18 @@ export const experiences: ExperienceInterface[] = [
   },
   {
     id: "keneco",
-    position: "Web Developer Intern",
+    position: "Software Developer Intern",
     company: "Kennemer Eco Solutions",
-    location: "Remote",
+    location: "Asia (Remote)",
     startDate: new Date("2024-07-01"),
     endDate: new Date("2025-03-30"),
     description: [
-      "Developed companys's first website using React, Django, and PostgreSQL.",
-      "Set up AWS servers and CI/CD pipelines."
+      "Built and maintained full-stack web applications using Django, React.js, SQL, and AWS.",
+      "Developed scalable backend APIs, database models, and responsive dashboards for environmental sustainability solutions.",
     ],
     achievements: [
-      "Developed company's first MVP using React, Django, PostgreSQL and Boostrap.",
-      "Set up AWS servers and CI/CD pipelines, scaling traffic to 3,000+ users/day."
+      "Improved application performance and deployment workflows while collaborating with cross-functional teams.",
+      "Set up AWS servers and CI/CD pipelines, scaling traffic to 3,000+ users/day.",
     ],
     skills: [
       "React",
