@@ -1,5 +1,7 @@
 "use client";
 
+import type { LucideIcon } from "lucide-react";
+import { ArrowUpRight, Github, Linkedin, Mail } from "lucide-react";
 import { useEffect, useRef } from "react";
 
 import { experiences } from "@/config/experience";
@@ -12,537 +14,494 @@ import "./portfolio.css";
 const RESUME_URL =
   "https://drive.google.com/file/d/1mgEmrs6RghceDPHCXs0sJ2ava00DNnMO/view";
 const EMAIL = "adityasahani893@gmail.com";
-const GITHUB = "https://github.com/sahaniaditya";
+
+/* URLs stay in config/socials.ts; this maps them to display labels and to
+   outline glyphs. Order is deliberate — email first, CV last. */
+const SOCIAL_ORDER = ["Gmail", "Github", "LinkedIn"] as const;
+const SOCIAL_LABEL: Record<string, string> = {
+  Gmail: "Email",
+  Github: "GitHub",
+  LinkedIn: "LinkedIn",
+};
+const SOCIAL_ICON: Record<string, LucideIcon> = {
+  Gmail: Mail,
+  Github: Github,
+  LinkedIn: Linkedin,
+};
+
+/** Shared by the hero and the colophon. Icons are 14px outline glyphs in
+ *  currentColor, so they read as typography rather than UI chrome. */
+const elsewhere = [
+  ...SOCIAL_ORDER.flatMap((name) => {
+    const social = SocialLinks.find((s) => s.name === name);
+    if (!social) return [];
+    return [
+      { label: SOCIAL_LABEL[name], href: social.link, Icon: SOCIAL_ICON[name] },
+    ];
+  }),
+  { label: "Curriculum vitae", href: RESUME_URL, Icon: ArrowUpRight },
+];
+
+const navItems = [
+  { id: "about", label: "About" },
+  { id: "experience", label: "Experience" },
+  { id: "work", label: "Work" },
+  { id: "toolbox", label: "Toolbox" },
+  { id: "contact", label: "Contact" },
+];
+
+/* ------------------------------------------------------------------
+   Colour coding
+
+   Four validated hues carry domain identity (see portfolio.css for the
+   validation figures). Toolbox categories map onto them; Cloud and
+   Databases share the infrastructure hue, and Core CS stays neutral
+   because fundamentals aren't a stack choice.
+   ------------------------------------------------------------------ */
+
+type Cat = "lang" | "ai" | "fw" | "infra" | "none";
+
+const CAT_BY_CATEGORY: Record<string, Cat> = {
+  Languages: "lang",
+  "AI / ML": "ai",
+  "Frameworks & Libraries": "fw",
+  "Cloud & DevOps": "infra",
+  Databases: "infra",
+  "Core CS": "none",
+};
+
+/** Tech names differ between configs ("Typescript" vs "TypeScript",
+ *  "HTML 5" vs "HTML"), so match on a normalised key plus a few aliases
+ *  for names that only ever appear in a project or role stack. */
+const norm = (s: string) => s.toLowerCase().replace(/[\s._-]/g, "");
+
+const CAT_ALIASES: Record<string, Cat> = {
+  html5: "lang",
+  css3: "lang",
+  sql: "infra",
+  mysql: "infra",
+  llms: "ai",
+  llm: "ai",
+  googlegemini: "ai",
+  serpapi: "ai",
+  tensorflow: "ai",
+  pytorch: "ai",
+  webgl: "fw",
+  graphql: "fw",
+  nestjs: "fw",
+  expressjs: "fw",
+  redux: "fw",
+  bootstrap: "fw",
+  materialui: "fw",
+  netlify: "infra",
+  socketio: "fw",
+};
+
+const CAT_BY_TECH = new Map<string, Cat>(Object.entries(CAT_ALIASES));
+skillGroups.forEach((group) => {
+  const cat = CAT_BY_CATEGORY[group.category] ?? "none";
+  group.items.forEach((item) => CAT_BY_TECH.set(norm(item), cat));
+});
+
+const catOf = (tech: string): Cat => CAT_BY_TECH.get(norm(tech)) ?? "none";
+
+/** Tech tags. Colour is redundant with the label, never the only cue. */
+function Tags({ items }: { items: string[] }) {
+  if (items.length === 0) return null;
+  return (
+    <div className="ed-tags">
+      {items.map((tech) => (
+        <span key={tech} className="ed-tag" data-cat={catOf(tech)}>
+          {tech}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------
+   Experience
+   ------------------------------------------------------------------ */
 
 const MONTHS = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
 
-/** "MMM YYYY". An end date earlier than the start (a sentinel for the
- *  current role in the data) renders as "Present". */
-function formatPeriod(start: Date, end: Date | "Present"): string {
-  const s = `${MONTHS[start.getMonth()]} ${start.getFullYear()}`;
+/** Compact range for the left gutter. Ranges inside one calendar year get
+ *  months ("May–Jul 2026"), since bare years would collide when two roles
+ *  fall in the same year. Multi-year ranges stay terse ("2025–26"). */
+function yearRange(start: Date, end: Date | "Present"): string {
+  const from = start.getFullYear();
   if (end === "Present" || end.getTime() < start.getTime()) {
-    return `${s} – Present`;
+    return `${from} — Present`;
   }
-  return `${s} – ${MONTHS[end.getMonth()]} ${end.getFullYear()}`;
+
+  const to = end.getFullYear();
+  if (to !== from) return `${from}–${String(to).slice(2)}`;
+
+  const m1 = MONTHS[start.getMonth()];
+  const m2 = MONTHS[end.getMonth()];
+  return m1 === m2 ? `${m1} ${from}` : `${m1}–${m2} ${from}`;
 }
 
-const navItems = [
-  { id: "experience", label: "experience" },
-  { id: "skills", label: "skills" },
-  { id: "projects", label: "projects" },
-  { id: "launches", label: "highlights" },
-  { id: "contact", label: "contact" },
-];
+/** Matches "5+", "3,000+", "63.5%", "2024" — i.e. a claim with a number in it. */
+const HAS_METRIC = /\d[\d,]*\+|\d+(\.\d+)?\s?%|\d{3,}/;
 
-const heroStats = [
-  { value: "5+", label: "companies & internships" },
-  { value: `${Projects.length}+`, label: "projects shipped" },
-  { value: "∞", label: "cups of coffee" },
-];
-
-// Experience straight from config, with cleaned periods.
 const experience = experiences.map((job) => ({
   role: job.position,
   company: job.company,
-  period: formatPeriod(job.startDate, job.endDate),
+  companyUrl: job.companyUrl,
+  years: yearRange(job.startDate, job.endDate),
+  location: job.location,
   summary: job.description.join(" "),
+  // Surface the one achievement that carries a real number, if there is one.
+  figure: job.achievements.find((a) => HAS_METRIC.test(a)),
   stack: job.skills,
 }));
 
-// Projects from config.
-const projects = Projects.map((p) => ({
-  name: p.companyName,
-  year: `${p.endDate.getFullYear()}`,
-  desc: p.shortDescription,
-  tags: p.techStack.slice(0, 3),
-  link: p.websiteLink || p.githubLink || "#",
-}));
+/* ------------------------------------------------------------------
+   Selected work
 
-// "Launches" repurposed as shipped-project highlights with real metrics.
-const launches = [
-  {
-    glyph: "◆",
-    name: "3D Scene Reconstruction",
-    status: "live",
-    desc: "Multi-technique 3D reconstruction (Gaussian Splatting, NeRF, SfM, Pix2Vox) deployed as an interactive web demo.",
-    metric: "Live",
-    metricLabel: "HuggingFace Space",
-    link: "https://huggingface.co/spaces/adirathor07/snap2scene",
-  },
-  {
-    glyph: "♪",
-    name: "Music Recommender",
-    status: "live",
-    desc: "Suggests music from facial emotion using custom VGG16 / LeNet models trained on FER-2013.",
-    metric: "63.56%",
-    metricLabel: "model accuracy",
-    link: "https://github.com/sahaniaditya/MusicRecommendationBasedOnFacialExpression",
-  },
-  {
-    glyph: "⚡",
-    name: "AI Shopping Assistant",
-    status: "shipped",
-    desc: "Voice-enabled e-commerce chatbot with deep product research and smart ranking via SerpAPI + Google Gemini.",
-    metric: "Gemini",
-    metricLabel: "AI-powered",
-    link: "https://github.com/sahaniaditya/shopping-assistant",
-  },
-  {
-    glyph: "◇",
-    name: "FoodBuddy",
-    status: "shipped",
-    desc: "Full-stack food ordering platform with auth, saved favorites, price filtering and a cart system.",
-    metric: "MERN",
-    metricLabel: "full-stack",
-    link: "https://github.com/sahaniaditya/FoodBuddy",
-  },
-];
+   config/projects.ts holds the source data. This map supplies display
+   titles (the config names carry subtitles and repo-style casing that
+   don't set well at 22px) and the one metric worth quoting per project.
+   ------------------------------------------------------------------ */
 
-// Count for the "shipped products" status card, zero-padded (e.g. "04").
-const shippedCount = String(launches.length).padStart(2, "0");
+const WORK_META: Record<string, { title: string; figure?: string }> = {
+  "3d-reconstruction": { title: "Snap2Scene" },
+  "shopping-assistant": { title: "AI Shopping Assistant" },
+  music: {
+    title: "Music Recommendation from Facial Emotion",
+    // Aditya's own figure — the repo README doesn't document it.
+    figure:
+      "Custom VGG16 and LeNet models trained on FER-2013, reaching 63.56% accuracy.",
+  },
+  "food-buddy": { title: "FoodBuddy" },
+  nutrinova: { title: "NutriNova" },
+};
 
-const socials = [
-  ...SocialLinks.map((s) => ({ label: `${s.name} →`, href: s.link })),
-  { label: "Résumé →", href: RESUME_URL },
-];
+const work = Projects.map((p) => {
+  const meta = WORK_META[p.id];
+  return {
+    id: p.id,
+    // Fall back to trimming the config subtitle if a project isn't mapped yet.
+    title: meta?.title ?? p.companyName.split(" : ")[0],
+    years: `${p.endDate.getFullYear()}`,
+    summary: p.shortDescription,
+    figure: meta?.figure,
+    stack: p.techStack.slice(0, 6),
+    link: p.websiteLink || p.githubLink,
+  };
+}).sort((a, b) => Number(b.years) - Number(a.years));
 
 const year = new Date().getFullYear();
 
 export default function HomePage() {
   const rootRef = useRef<HTMLDivElement>(null);
-  const spotRef = useRef<HTMLDivElement>(null);
-  const progressRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
 
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const fine = window.matchMedia("(pointer:fine)").matches;
     const cleanups: Array<() => void> = [];
 
-    // ---- count-up ----
-    const countUp = (el: HTMLElement) => {
-      if ((el as any)._counted) return;
-      const text = (el.textContent || "").trim();
-      const m = text.match(/^([^\d-]*)(-?[\d,]*\.?\d+)(.*)$/);
-      if (!m) return;
-      (el as any)._counted = true;
-      const prefix = m[1];
-      const suffix = m[3];
-      const numStr = m[2].replace(/,/g, "");
-      const target = parseFloat(numStr);
-      const decimals = (numStr.split(".")[1] || "").length;
-      const hasComma = /,/.test(m[2]);
-      const fmt = (v: number) => {
-        let s = v.toFixed(decimals);
-        if (hasComma) s = Number(s).toLocaleString("en-US");
-        return prefix + s + suffix;
-      };
-      if (reduce) { el.textContent = fmt(target); return; }
-      const dur = 1100;
-      const start = performance.now();
-      const ease = (t: number) => 1 - Math.pow(1 - t, 3);
-      const tick = (now: number) => {
-        const p = Math.min(1, (now - start) / dur);
-        el.textContent = fmt(target * ease(p));
-        if (p < 1) requestAnimationFrame(tick);
-        else el.textContent = fmt(target);
-      };
-      requestAnimationFrame(tick);
-    };
+    /* ---- reveal on scroll (the only motion in the design) ---- */
+    const items = Array.from(
+      root.querySelectorAll<HTMLElement>("[data-reveal]")
+    );
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    // ---- text scramble ----
-    const scramble = (el: HTMLElement, delay: number) => {
-      if ((el as any)._scrambled) return;
-      (el as any)._scrambled = true;
-      const final = el.textContent || "";
-      if (reduce) return;
-      const chars = "!<>-_\\/[]{}=+*^?#01x";
-      const dur = 620;
-      const run = () => {
-        const start = performance.now();
-        const tick = (now: number) => {
-          const p = Math.min(1, (now - start) / dur);
-          const revealed = Math.floor(p * final.length);
-          let out = "";
-          for (let i = 0; i < final.length; i++) {
-            const c = final[i];
-            if (i < revealed || c === " " || c === "/" || c === "→") out += c;
-            else out += chars[Math.floor(Math.random() * chars.length)];
-          }
-          el.textContent = out;
-          if (p < 1) requestAnimationFrame(tick);
-          else el.textContent = final;
-        };
-        requestAnimationFrame(tick);
-      };
-      window.setTimeout(run, delay);
-    };
+    if (reduce) {
+      items.forEach((el) => el.classList.add("is-in"));
+    } else if ("IntersectionObserver" in window) {
+      const io = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) return;
+            const el = entry.target as HTMLElement;
+            el.classList.add("is-in");
+            io.unobserve(el);
+          });
+        },
+        { rootMargin: "0px 0px -12% 0px", threshold: 0.05 }
+      );
+      items.forEach((el) => io.observe(el));
+      cleanups.push(() => io.disconnect());
+    } else {
+      items.forEach((el) => el.classList.add("is-in"));
+    }
 
-    // ---- scroll reveal ----
-    const items = Array.from(root.querySelectorAll<HTMLElement>("[data-reveal]"));
-    const pending = new Set(items);
-    const reveal = (el: HTMLElement, delay: number) => {
-      pending.delete(el);
-      el.style.transitionDelay = `${delay}ms`;
-      el.classList.add("is-in");
-      const targets = [el, ...Array.from(el.querySelectorAll<HTMLElement>("[data-count],[data-scramble]"))];
-      targets.forEach((t) => {
-        if (t.hasAttribute("data-scramble")) scramble(t, delay);
-        if (t.hasAttribute("data-count")) window.setTimeout(() => countUp(t), delay + 120);
-      });
-    };
-    const check = () => {
-      const vh = window.innerHeight;
-      let batch = 0;
-      items.forEach((el) => {
-        if (!pending.has(el)) return;
-        if (el.getBoundingClientRect().top < vh * 0.92) {
-          reveal(el, batch * 70);
-          batch++;
-        }
-      });
-    };
-    requestAnimationFrame(() => requestAnimationFrame(check));
-    const onReveal = () => requestAnimationFrame(check);
-    window.addEventListener("scroll", onReveal, { passive: true });
-    window.addEventListener("resize", onReveal, { passive: true });
-    cleanups.push(() => {
-      window.removeEventListener("scroll", onReveal);
-      window.removeEventListener("resize", onReveal);
-    });
-    const safety = window.setTimeout(() => {
-      Array.from(pending).forEach((el, i) => reveal(el, i * 40));
-    }, 2600);
-    cleanups.push(() => window.clearTimeout(safety));
-
-    // ---- scroll spy + progress ----
-    const links = Array.from(root.querySelectorAll<HTMLElement>("[data-navlink][data-target]"));
+    /* ---- nav underline follows the section you're reading ---- */
+    const links = Array.from(
+      root.querySelectorAll<HTMLElement>("[data-navlink]")
+    );
     const sections = links
-      .map((l) => ({ link: l, sec: document.getElementById(l.getAttribute("data-target") || "") }))
+      .map((link) => ({
+        link,
+        sec: document.getElementById(link.dataset.navlink || ""),
+      }))
       .filter((x): x is { link: HTMLElement; sec: HTMLElement } => !!x.sec);
+
     const onScroll = () => {
-      const y = window.scrollY + window.innerHeight * 0.32;
-      let current: { link: HTMLElement; sec: HTMLElement } | null = null;
+      const y = window.scrollY + window.innerHeight * 0.3;
+      let current: HTMLElement | null = null;
       sections.forEach((x) => {
-        if (x.sec.offsetTop <= y) current = x;
+        if (x.sec.offsetTop <= y) current = x.link;
       });
-      sections.forEach((x) => x.link.classList.toggle("is-active", x === current));
-      const el = progressRef.current;
-      if (el) {
-        const max = document.documentElement.scrollHeight - window.innerHeight;
-        const pct = max > 0 ? (window.scrollY / max) * 100 : 0;
-        el.style.width = `${Math.min(100, Math.max(0, pct))}%`;
-      }
+      sections.forEach((x) =>
+        x.link.classList.toggle("is-active", x.link === current)
+      );
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
     cleanups.push(() => window.removeEventListener("scroll", onScroll));
 
-    // ---- 3D tilt ----
-    if (fine && !reduce) {
-      root.querySelectorAll<HTMLElement>("[data-tilt]").forEach((card) => {
-        const onMove = (e: MouseEvent) => {
-          const r = card.getBoundingClientRect();
-          const px = (e.clientX - r.left) / r.width - 0.5;
-          const py = (e.clientY - r.top) / r.height - 0.5;
-          card.style.transition = "transform .08s ease-out, border-color .3s, box-shadow .3s";
-          card.style.transform = `perspective(800px) rotateY(${(px * 7).toFixed(2)}deg) rotateX(${(-py * 7).toFixed(2)}deg) translateY(-5px)`;
-        };
-        const onLeave = () => {
-          card.style.transition = "transform .5s cubic-bezier(.2,.7,.2,1), border-color .3s, box-shadow .3s";
-          card.style.transform = "none";
-        };
-        card.addEventListener("mousemove", onMove);
-        card.addEventListener("mouseleave", onLeave);
-        cleanups.push(() => {
-          card.removeEventListener("mousemove", onMove);
-          card.removeEventListener("mouseleave", onLeave);
-        });
-      });
-    }
-
-    // ---- cursor spotlight ----
-    if (fine && spotRef.current) {
-      const spot = spotRef.current;
-      let raf: number | null = null;
-      let mx = 0, my = 0;
-      const move = (e: MouseEvent) => {
-        mx = e.clientX; my = e.clientY;
-        spot.style.opacity = "1";
-        if (!raf) {
-          raf = requestAnimationFrame(() => {
-            spot.style.left = `${mx}px`;
-            spot.style.top = `${my}px`;
-            raf = null;
-          });
-        }
-      };
-      window.addEventListener("mousemove", move, { passive: true });
-      cleanups.push(() => window.removeEventListener("mousemove", move));
-    }
-
     return () => cleanups.forEach((fn) => fn());
   }, []);
 
   return (
-    <div className="acp" ref={rootRef}>
-      {/* ambient background */}
-      <div className="acp-grid" />
-      <div className="acp-glow acp-glow--1" />
-      <div className="acp-glow acp-glow--2" />
-      <div className="acp-spot" ref={spotRef} />
-
-      {/* scroll progress */}
-      <div className="acp-progress" ref={progressRef} />
-
-      {/* NAV */}
-      <nav className="acp-nav">
-        <a href="#home" className="acp-brand" data-navlink data-target="home">
-          <span className="acp-brand-badge">A</span>
-          <span>aditya<span style={{ color: "var(--accent)" }}>.dev</span></span>
-        </a>
-        <div className="acp-navlinks">
-          {navItems.map((item) => (
-            <a
-              key={item.id}
-              href={`#${item.id}`}
-              className="acp-navlink"
-              data-navlink
-              data-target={item.id}
-            >
-              {item.label}
+    <div className="ed" ref={rootRef}>
+      <header className="ed-head">
+        <div className="ed-head-inner">
+          <a href="#top" className="ed-wordmark">
+            Aditya Sahani
+          </a>
+          <nav className="ed-nav">
+            {navItems.map((item) => (
+              <a key={item.id} href={`#${item.id}`} data-navlink={item.id}>
+                {item.label}
+              </a>
+            ))}
+            <a href={RESUME_URL} target="_blank" rel="noreferrer">
+              CV
             </a>
-          ))}
+          </nav>
         </div>
-      </nav>
+      </header>
 
-      <main className="acp-main">
-        {/* HERO */}
-        <section id="home" className="acp-hero">
-          <div>
-            <div data-reveal className="acp-badge">
-              <span className="acp-badge-dot" />
-              available for new work
-            </div>
-            <p data-reveal data-scramble className="acp-prompt">$ whoami</p>
-            <h1 data-reveal className="acp-name">
-              Aditya<br />Sahani<span style={{ color: "var(--accent)" }}>.</span>
+      <main id="top">
+        {/* ---------- opening statement ---------- */}
+        <section className="ed-hero">
+          <div className="ed-wrap">
+            <h1 data-reveal className="ed-hero-statement">
+              I build AI agents and the backends that keep them{" "}
+              <em>honest</em>.
             </h1>
-            <p data-reveal className="acp-role">&lt;Full Stack Developer &amp; AI/ML Engineer /&gt;</p>
-            <p data-reveal className="acp-bio">
-              Hi, I&apos;m Aditya — a coder, creator, and problem-solver. From
-              full-stack apps to AI-driven workflows and computer-vision pipelines,
-              I love turning fuzzy ideas into tech that ships and gets used.
-            </p>
-            <div data-reveal className="acp-cta-row">
-              <a href="#projects" className="acp-btn acp-btn--primary">view work →</a>
-              <a href={GITHUB} target="_blank" rel="noreferrer" className="acp-btn acp-btn--ghost">github</a>
-              <a href={RESUME_URL} target="_blank" rel="noreferrer" className="acp-btn acp-btn--ghost">résumé</a>
-            </div>
-            <div data-reveal className="acp-stats">
-              {heroStats.map((s) => (
-                <div key={s.label}>
-                  <span data-count className="acp-stat-val">{s.value}</span>
-                  {s.label}
-                </div>
-              ))}
-            </div>
-          </div>
 
-          {/* shipped-products card + terminal */}
-          <div className="acp-hero-right">
-            <a href="#launches" data-reveal className="acp-ship-card">
-              <span className="acp-ship-card-left">
-                <span className="acp-ship-pulse" />
-                <span className="acp-ship-card-text">
-                  <span className="acp-ship-card-title">shipped products</span>
-                  <span className="acp-ship-card-sub">real products, live in production</span>
-                </span>
+            <div data-reveal className="ed-hero-now">
+              <span className="ed-label ed-hero-now-label">Currently</span>
+              <span className="ed-hero-now-value">
+                AI Engineer at{" "}
+                <a href="https://pattern.com" target="_blank" rel="noreferrer">
+                  Pattern
+                </a>
+                , Pune, India
               </span>
-              <span className="acp-ship-card-badge">
-                <span className="acp-ship-card-num">{shippedCount}</span>
-                <span className="acp-ship-card-live">live</span>
-                <span className="acp-ship-arrow">→</span>
-              </span>
-            </a>
-            <div data-reveal className="acp-term-wrap">
-              <div className="acp-term-glow" />
-              <div className="acp-term">
-              <div className="acp-term-bar">
-                <span className="acp-dot" style={{ background: "#ff5f56" }} />
-                <span className="acp-dot" style={{ background: "#ffbd2e" }} />
-                <span className="acp-dot" style={{ background: "#27c93f" }} />
-                <span className="acp-term-title">aditya@portfolio: ~</span>
-              </div>
-              <div className="acp-term-body">
-                <div style={{ color: "var(--muted)" }}>
-                  <span style={{ color: "var(--accent)" }}>➜</span>{" "}
-                  <span style={{ color: "var(--cyan)" }}>~</span> cat profile.json
-                </div>
-                <div style={{ color: "var(--text)" }}>{"{"}</div>
-                <div className="ind"><span style={{ color: "var(--cyan)" }}>&quot;role&quot;</span>: <span style={{ color: "#ffd479" }}>&quot;Full Stack + AI/ML Engineer&quot;</span>,</div>
-                <div className="ind"><span style={{ color: "var(--cyan)" }}>&quot;focus&quot;</span>: [<span style={{ color: "#ffd479" }}>&quot;web&quot;</span>, <span style={{ color: "#ffd479" }}>&quot;AI/ML&quot;</span>, <span style={{ color: "#ffd479" }}>&quot;systems&quot;</span>],</div>
-                <div className="ind"><span style={{ color: "var(--cyan)" }}>&quot;based&quot;</span>: <span style={{ color: "#ffd479" }}>&quot;India&quot;</span>,</div>
-                <div className="ind"><span style={{ color: "var(--cyan)" }}>&quot;shipping&quot;</span>: <span style={{ color: "var(--accent)" }}>true</span></div>
-                <div style={{ color: "var(--text)" }}>{"}"}</div>
-                <div style={{ color: "var(--muted)", marginTop: 10 }}>
-                  <span style={{ color: "var(--accent)" }}>➜</span>{" "}
-                  <span style={{ color: "var(--cyan)" }}>~</span> ./build --status
-                </div>
-                <div style={{ color: "var(--accent)" }}>
-                  ✓ all systems operational<span className="acp-caret" />
-                </div>
-              </div>
-              <div className="acp-scan" />
-              </div>
             </div>
-          </div>
-        </section>
 
-        {/* EXPERIENCE */}
-        <section id="experience" className="acp-section">
-          <div data-reveal className="acp-section-head">
-            <p data-scramble className="acp-eyebrow">{"// 01 — experience"}</p>
-            <h2 className="acp-h2">Where I&apos;ve shipped</h2>
-          </div>
-          <div className="acp-timeline">
-            {experience.map((job, i) => (
-              <div key={`${job.company}-${i}`} data-reveal className="acp-job">
-                <span className="acp-job-dot" />
-                <div className="acp-job-head">
-                  <h3 className="acp-job-role">
-                    {job.role} <span style={{ color: "var(--accent)" }}>@ {job.company}</span>
-                  </h3>
-                  <span className="acp-job-period">{job.period}</span>
-                </div>
-                <p className="acp-job-summary">{job.summary}</p>
-                <div className="acp-chips">
-                  {job.stack.map((t) => (
-                    <span key={t} className="acp-chip">{t}</span>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* SKILLS */}
-        <section id="skills" className="acp-section">
-          <div data-reveal className="acp-section-head">
-            <p data-scramble className="acp-eyebrow">{"// 02 — skills"}</p>
-            <h2 className="acp-h2">Toolbox</h2>
-          </div>
-          <div className="acp-skill-grid">
-            {skillGroups.map((group) => (
-              <div key={group.category} data-reveal className="acp-card">
-                <span className="acp-card-tag">{group.tag}</span>
-                <h3 className="acp-card-cat">{group.category}</h3>
-                <div className="acp-chips">
-                  {group.items.map((skill) => (
-                    <span key={skill} className="acp-chip--plain">{skill}</span>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* PROJECTS */}
-        <section id="projects" className="acp-section">
-          <div data-reveal className="acp-section-head">
-            <p data-scramble className="acp-eyebrow">{"// 03 — projects"}</p>
-            <h2 className="acp-h2">Selected work</h2>
-          </div>
-          <div className="acp-project-grid">
-            {projects.map((p) => (
-              <a
-                key={p.name}
-                href={p.link}
-                target="_blank"
-                rel="noreferrer"
-                data-reveal
-                data-tilt
-                className="acp-project"
-              >
-                <div className="acp-project-top">
-                  <span className="acp-project-year">{p.year}</span>
-                  <span style={{ color: "var(--accent)", fontSize: 18 }}>↗</span>
-                </div>
-                <h3 className="acp-project-name">{p.name}</h3>
-                <p className="acp-project-desc">{p.desc}</p>
-                <div className="acp-chips">
-                  {p.tags.map((t) => (
-                    <span key={t} className="acp-chip">{t}</span>
-                  ))}
-                </div>
-              </a>
-            ))}
-          </div>
-        </section>
-
-        {/* LAUNCHES / HIGHLIGHTS */}
-        <section id="launches" className="acp-section">
-          <div data-reveal className="acp-section-head">
-            <p data-scramble className="acp-eyebrow">{"// 04 — highlights"}</p>
-            <h2 className="acp-h2">Things I&apos;ve shipped</h2>
-            <p className="acp-lede">Projects that made it past the demo — deployed, open-sourced, or used by real people.</p>
-          </div>
-          <div className="acp-launches">
-            {launches.map((l) => (
-              <a
-                key={l.name}
-                href={l.link}
-                target="_blank"
-                rel="noreferrer"
-                data-reveal
-                className="acp-launch"
-                style={{ textDecoration: "none" }}
-              >
-                <div className="acp-launch-glyph">{l.glyph}</div>
-                <div>
-                  <div className="acp-launch-head">
-                    <h3 className="acp-launch-name">{l.name}</h3>
-                    <span className="acp-launch-status">{l.status}</span>
-                  </div>
-                  <p className="acp-launch-desc">{l.desc}</p>
-                </div>
-                <div className="acp-launch-metrics">
-                  <div data-count className="acp-launch-metric">{l.metric}</div>
-                  <div className="acp-launch-metric-label">{l.metricLabel}</div>
-                </div>
-              </a>
-            ))}
-          </div>
-        </section>
-
-        {/* CONTACT */}
-        <section id="contact" className="acp-section" style={{ paddingBottom: 70 }}>
-          <div data-reveal className="acp-contact-card">
-            <p data-scramble className="acp-eyebrow">{"// 05 — contact"}</p>
-            <h2 className="acp-contact-h">Let&apos;s build<br />something good.</h2>
-            <p className="acp-contact-p">
-              Open to engineering roles, collaborations, and the occasional ambitious side project.
-            </p>
-            <a href={`mailto:${EMAIL}`} className="acp-contact-btn">ping {EMAIL}</a>
-            <div className="acp-socials">
-              {socials.map((s) => (
-                <a key={s.label} href={s.href} target="_blank" rel="noreferrer" className="acp-social">
-                  {s.label}
+            <div data-reveal className="ed-hero-links">
+              {elsewhere.map(({ label, href, Icon }) => (
+                <a
+                  key={label}
+                  href={href}
+                  {...(href.startsWith("mailto:")
+                    ? {}
+                    : { target: "_blank", rel: "noreferrer" })}
+                >
+                  <Icon size={14} strokeWidth={1.75} aria-hidden="true" />
+                  {label}
                 </a>
               ))}
             </div>
           </div>
         </section>
 
-        <footer className="acp-footer">
-          <span>© {year} Aditya Sahani</span>
-          <span>designed &amp; built with <span className="heart">♥</span> and too much coffee</span>
-        </footer>
+        {/* ---------- about ---------- */}
+        <section id="about" className="ed-section">
+          <div className="ed-wrap">
+            <div data-reveal className="ed-section-head">
+              <h2 className="ed-label">About</h2>
+            </div>
+
+            <div className="ed-about">
+              <div />
+              <div data-reveal className="ed-prose">
+                <p>
+                  I&apos;m a software engineer who works where backend systems
+                  meet applied machine learning — and I care most about the part
+                  where something stops being a demo and starts being used.
+                </p>
+                <p>
+                  Right now I&apos;m an AI engineer at Pattern, where I first
+                  interned on agentic workflows and an auditing pipeline for
+                  AI-generated product imagery. Before this I built a
+                  supply-chain optimisation platform at Kimaru.ai — replacing
+                  manual yarn planning and loom scheduling with an engine that
+                  holds up in production — leading a team of five engineering
+                  interns to do it. At Quark I shipped LLM systems for Japanese
+                  enterprises: retrieval over internal knowledge bases,
+                  document intelligence, and an agent that converts 2D CAD
+                  drawings into parametric 3D models. Earlier, at Kennemer, I
+                  scaled a Django and React platform past three thousand users
+                  a day.
+                </p>
+                <p>
+                  I like owning a feature end to end — schema, API, interface —
+                  because the interesting problems usually hide in the seams
+                  between those layers. I&apos;d rather ship something narrow
+                  that works than something broad that demos well.
+                </p>
+                <p>
+                  Outside of work I build things mostly to understand how they
+                  work: comparing Gaussian Splatting against NeRF and
+                  structure-from-motion for 3D reconstruction, training
+                  emotion-recognition models from scratch, and wiring LLMs into
+                  places they probably don&apos;t belong <em>yet</em>.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ---------- experience ---------- */}
+        <section id="experience" className="ed-section">
+          <div className="ed-wrap">
+            <div data-reveal className="ed-section-head">
+              <h2 className="ed-label">Experience</h2>
+              <span className="ed-section-note">
+                {experience.length} roles, 2024 to present
+              </span>
+            </div>
+
+            {experience.map((job) => (
+              <article
+                key={`${job.company}-${job.years}`}
+                data-reveal
+                className="ed-entry"
+              >
+                <div className="ed-entry-years">{job.years}</div>
+                <div>
+                  <h3 className="ed-entry-title">{job.role}</h3>
+                  <p className="ed-entry-org">
+                    {job.companyUrl ? (
+                      <a
+                        className="ed-link"
+                        href={job.companyUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {job.company}
+                      </a>
+                    ) : (
+                      job.company
+                    )}
+                    {" — "}
+                    {job.location}
+                  </p>
+                  <p className="ed-entry-body">{job.summary}</p>
+                  {job.figure && (
+                    <p className="ed-entry-figure">{job.figure}</p>
+                  )}
+                  <Tags items={job.stack} />
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        {/* ---------- selected work ---------- */}
+        <section id="work" className="ed-section">
+          <div className="ed-wrap">
+            <div data-reveal className="ed-section-head">
+              <h2 className="ed-label">Selected work</h2>
+              <span className="ed-section-note">
+                {work.length} projects, deployed or open-sourced
+              </span>
+            </div>
+
+            {work.map((p) => (
+              <article key={p.id} data-reveal className="ed-entry">
+                <div className="ed-entry-years">{p.years}</div>
+                <div>
+                  <h3 className="ed-entry-title">
+                    {p.link ? (
+                      <a href={p.link} target="_blank" rel="noreferrer">
+                        {p.title}
+                      </a>
+                    ) : (
+                      p.title
+                    )}
+                  </h3>
+                  <p className="ed-entry-body">{p.summary}</p>
+                  {p.figure && <p className="ed-entry-figure">{p.figure}</p>}
+                  <Tags items={p.stack} />
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        {/* ---------- toolbox ---------- */}
+        <section id="toolbox" className="ed-section">
+          <div className="ed-wrap">
+            <div data-reveal className="ed-section-head">
+              <h2 className="ed-label">Toolbox</h2>
+              <span className="ed-section-note">
+                colour = domain, reused on every tag above
+              </span>
+            </div>
+
+            <dl data-reveal className="ed-defs">
+              {skillGroups.map((group) => (
+                <div
+                  key={group.category}
+                  className="ed-def"
+                  data-cat={CAT_BY_CATEGORY[group.category] ?? "none"}
+                >
+                  <dt className="ed-def-term">{group.category}</dt>
+                  <dd className="ed-def-items">{group.items.join(" · ")}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        </section>
+
+        {/* ---------- contact ---------- */}
+        <section id="contact" className="ed-contact">
+          <div className="ed-wrap">
+            <h2 data-reveal className="ed-contact-statement">
+              Open to engineering roles and <em>genuinely</em> interesting
+              problems.
+            </h2>
+            <p data-reveal className="ed-contact-body">
+              I work across backend, frontend and applied ML — usually where
+              those three meet. If you have something in that territory, write
+              to me.
+            </p>
+            <a data-reveal href={`mailto:${EMAIL}`} className="ed-contact-email">
+              {EMAIL}
+            </a>
+            {/* Email is already the large link above, so it's dropped here. */}
+            <div data-reveal className="ed-contact-links">
+              {elsewhere
+                .filter(({ label }) => label !== "Email")
+                .map(({ label, href, Icon }) => (
+                  <a key={label} href={href} target="_blank" rel="noreferrer">
+                    <Icon size={14} strokeWidth={1.75} aria-hidden="true" />
+                    {label}
+                  </a>
+                ))}
+            </div>
+          </div>
+        </section>
+
+        <div className="ed-wrap">
+          <footer className="ed-foot">
+            <span>© {year} Aditya Sahani</span>
+            <span>Pune, India</span>
+          </footer>
+        </div>
       </main>
     </div>
   );

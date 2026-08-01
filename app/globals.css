@@ -263,6 +263,15 @@
   }
 }
 
+/* Paint the page canvas to match the portfolio so overscroll and first paint
+   don't flash a different colour. The portfolio is dark-only by design, so
+   this is a single value rather than a light/dark pair. */
+html,
+body {
+  background: #0b0c0e;
+  color-scheme: dark;
+}
+
 .card {
   position: relative;
   display: flex;

@@ -1,6 +1,8 @@
 export type ValidSkills =
   | "Next.js"
   | "LLMs"
+  | "Google Gemini"
+  | "SerpAPI"
   | "Computer Vision"
   | "React"
   | "GraphQL"

@@ -92,10 +92,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
     <html lang="en">
       <head />
       <body
-        className={cn(
-          "min-h-screen bg-[#05080a] font-sans antialiased",
-          fontSans.variable
-        )}
+        className={cn("min-h-screen font-sans antialiased", fontSans.variable)}
       >
         {children}
         <Analytics />

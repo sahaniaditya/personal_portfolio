@@ -16,12 +16,25 @@ export interface ExperienceInterface {
 
 export const experiences: ExperienceInterface[] = [
   {
+    id: "pattern-ai",
+    position: "AI Engineer",
+    company: "Pattern Technologies",
+    location: "Pune, India",
+    startDate: new Date("2026-08-01"),
+    endDate: "Present",
+    description: ["Working on automation workflows and backend systems."],
+    achievements: [],
+    skills: [],
+    companyUrl: "https://pattern.com",
+    logo: "/experience/pattern-logo.png",
+  },
+  {
     id: "kimaru",
     position: "Software Engineer",
     company: "Kimaru.ai",
     location: "Remote",
     startDate: new Date("2026-05-31"),
-    endDate: new Date("2026-04-01"),
+    endDate: new Date("2026-07-31"),
     description: [
       "Architected and built a production-grade supply chain optimization platform for a large carpet manufacturer, automating yarn requirement planning and generating optimized loom production schedules.",
       "Developed scalable full-stack services using FastAPI, Next.js, TypeScript, PostgreSQL, and Docker, and deployed them on AWS using containerized infrastructure.",
