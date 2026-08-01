@@ -59,7 +59,7 @@ export const metadata = {
         alt: siteConfig.name,
       },
     ],
-    creator: `@${siteConfig.username}`,
+    creator: `@${siteConfig.twitterHandle}`,
   },
   icons: {
     icon: siteConfig.iconIco,

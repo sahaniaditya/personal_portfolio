@@ -149,9 +149,9 @@ export const Projects: ProjectInterface[] = [
     type: "Personal",
     category: ["Web Dev", "Full Stack", "UI/UX"],
     shortDescription:
-      "Crafted Builtdesign's vibrant Blogs Website using Netlify CMS and React for engaging content experiences.",
-    websiteLink: "https://blog.builtdesign.in",
-    techStack: ["Next.js", "React", "Node.js", "MongoDB", "Typescript"],
+      "A diet tracking app that turns a fitness goal into a daily plan you can actually follow. You enter your metrics — weight, height, age, activity level — pick a target, then log meals as you eat them, and NutriNova scores the nutrition against that goal and adapts its recommendations as your intake shifts. Progress is charted over time, and a built-in LangChain chatbot answers questions about your plan, your logged meals and what to eat next. React front end, Node API and MongoDB, with accounts so history persists across devices.",
+    websiteLink: "https://github.com/sahaniaditya/NutriNova-Diet-recommender",
+    techStack: ["React", "Node.js", "MongoDB", "LangChain"],
     startDate: new Date("2022-03-01"),
     endDate: new Date("2022-07-01"),
     companyLogoImg: "/projects/nutrinova/logo.png",

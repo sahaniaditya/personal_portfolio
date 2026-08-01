@@ -1,13 +1,17 @@
 "use client";
 
-import type { LucideIcon } from "lucide-react";
 import { ArrowUpRight, Github, Linkedin, Mail } from "lucide-react";
-import { useEffect, useRef } from "react";
+import Link from "next/link";
+import { ComponentType, useEffect, useRef } from "react";
 
+import { Icons } from "@/components/common/icons";
+import { Tags } from "@/components/common/tags";
 import { experiences } from "@/config/experience";
 import { Projects } from "@/config/projects";
+import { shippedProducts } from "@/config/shipped";
 import { skillGroups } from "@/config/skills";
 import { SocialLinks } from "@/config/socials";
+import { CAT_BY_CATEGORY, catOf } from "@/lib/categories";
 
 import "./portfolio.css";
 
@@ -17,16 +21,26 @@ const EMAIL = "adityasahani893@gmail.com";
 
 /* URLs stay in config/socials.ts; this maps them to display labels and to
    outline glyphs. Order is deliberate — email first, CV last. */
-const SOCIAL_ORDER = ["Gmail", "Github", "LinkedIn"] as const;
+const SOCIAL_ORDER = ["Gmail", "Github", "LinkedIn", "X"] as const;
 const SOCIAL_LABEL: Record<string, string> = {
   Gmail: "Email",
   Github: "GitHub",
   LinkedIn: "LinkedIn",
+  X: "X",
 };
-const SOCIAL_ICON: Record<string, LucideIcon> = {
+/** Loose enough to hold both lucide's forwardRef icons and the plain
+ *  function component behind the inlined X mark. */
+type SocialIcon = ComponentType<{
+  size?: string | number;
+  strokeWidth?: string | number;
+  "aria-hidden"?: boolean | "true" | "false";
+}>;
+
+const SOCIAL_ICON: Record<string, SocialIcon> = {
   Gmail: Mail,
   Github: Github,
   LinkedIn: Linkedin,
+  X: Icons.x,
 };
 
 /** Shared by the hero and the colophon. Icons are 14px outline glyphs in
@@ -44,6 +58,7 @@ const elsewhere = [
 
 const navItems = [
   { id: "about", label: "About" },
+  { id: "shipped", label: "Shipped" },
   { id: "experience", label: "Experience" },
   { id: "work", label: "Work" },
   { id: "toolbox", label: "Toolbox" },
@@ -51,70 +66,88 @@ const navItems = [
 ];
 
 /* ------------------------------------------------------------------
-   Colour coding
+   Hero constellation
 
-   Four validated hues carry domain identity (see portfolio.css for the
-   validation figures). Toolbox categories map onto them; Cloud and
-   Databases share the infrastructure hue, and Core CS stays neutral
-   because fundamentals aren't a stack choice.
+   A graph of the stack. Positions are authored by hand, not generated,
+   so the composition stays deliberate rather than looking like a
+   particle field. Colour comes from catOf() — the same lookup the tags
+   use — so the graphic and the tags can never drift apart.
    ------------------------------------------------------------------ */
 
-type Cat = "lang" | "ai" | "fw" | "infra" | "none";
+const CS_NODES: Array<{ id: string; label: string; x: number; y: number }> = [
+  { id: "Typescript", label: "typescript", x: 62, y: 52 },
+  { id: "Python", label: "python", x: 212, y: 40 },
+  { id: "PyTorch", label: "pytorch", x: 130, y: 120 },
+  { id: "LangChain", label: "langchain", x: 245, y: 125 },
+  { id: "Google Gemini", label: "gemini", x: 310, y: 62 },
+  { id: "Next.js", label: "next.js", x: 58, y: 138 },
+  { id: "React", label: "react", x: 40, y: 218 },
+  { id: "FastAPI", label: "fastapi", x: 170, y: 205 },
+  { id: "PostgreSQL", label: "postgres", x: 250, y: 210 },
+  { id: "MongoDB", label: "mongodb", x: 95, y: 292 },
+  { id: "Docker", label: "docker", x: 185, y: 300 },
+  { id: "AWS", label: "aws", x: 288, y: 285 },
+];
 
-const CAT_BY_CATEGORY: Record<string, Cat> = {
-  Languages: "lang",
-  "AI / ML": "ai",
-  "Frameworks & Libraries": "fw",
-  "Cloud & DevOps": "infra",
-  Databases: "infra",
-  "Core CS": "none",
-};
+/** Edges are real relationships in the stack, not decoration. */
+const CS_EDGES: Array<[string, string]> = [
+  ["Typescript", "Next.js"],
+  ["Next.js", "React"],
+  ["Next.js", "MongoDB"],
+  ["Python", "PyTorch"],
+  ["Python", "LangChain"],
+  ["Python", "FastAPI"],
+  ["LangChain", "Google Gemini"],
+  ["LangChain", "PostgreSQL"],
+  ["FastAPI", "PostgreSQL"],
+  ["FastAPI", "Docker"],
+  ["MongoDB", "Docker"],
+  ["Docker", "AWS"],
+  ["PostgreSQL", "AWS"],
+];
 
-/** Tech names differ between configs ("Typescript" vs "TypeScript",
- *  "HTML 5" vs "HTML"), so match on a normalised key plus a few aliases
- *  for names that only ever appear in a project or role stack. */
-const norm = (s: string) => s.toLowerCase().replace(/[\s._-]/g, "");
-
-const CAT_ALIASES: Record<string, Cat> = {
-  html5: "lang",
-  css3: "lang",
-  sql: "infra",
-  mysql: "infra",
-  llms: "ai",
-  llm: "ai",
-  googlegemini: "ai",
-  serpapi: "ai",
-  tensorflow: "ai",
-  pytorch: "ai",
-  webgl: "fw",
-  graphql: "fw",
-  nestjs: "fw",
-  expressjs: "fw",
-  redux: "fw",
-  bootstrap: "fw",
-  materialui: "fw",
-  netlify: "infra",
-  socketio: "fw",
-};
-
-const CAT_BY_TECH = new Map<string, Cat>(Object.entries(CAT_ALIASES));
-skillGroups.forEach((group) => {
-  const cat = CAT_BY_CATEGORY[group.category] ?? "none";
-  group.items.forEach((item) => CAT_BY_TECH.set(norm(item), cat));
-});
-
-const catOf = (tech: string): Cat => CAT_BY_TECH.get(norm(tech)) ?? "none";
-
-/** Tech tags. Colour is redundant with the label, never the only cue. */
-function Tags({ items }: { items: string[] }) {
-  if (items.length === 0) return null;
+/** Decorative: every technology here is already listed in the Toolbox,
+ *  so this is hidden from assistive tech rather than read out twice. */
+function StackConstellation() {
+  const byId = new Map(CS_NODES.map((n) => [n.id, n]));
   return (
-    <div className="ed-tags">
-      {items.map((tech) => (
-        <span key={tech} className="ed-tag" data-cat={catOf(tech)}>
-          {tech}
-        </span>
-      ))}
+    <div className="ed-constellation" aria-hidden="true">
+      <svg viewBox="0 0 340 350">
+        <g className="cs-edges">
+          {CS_EDGES.map(([a, b]) => {
+            const from = byId.get(a);
+            const to = byId.get(b);
+            if (!from || !to) return null;
+            return (
+              <line
+                key={`${a}-${b}`}
+                x1={from.x}
+                y1={from.y}
+                x2={to.x}
+                y2={to.y}
+              />
+            );
+          })}
+        </g>
+        {CS_NODES.map((n, i) => (
+          <g
+            key={n.id}
+            className="cs-node"
+            data-cat={catOf(n.id)}
+            style={{
+              animationDelay: `${-1.7 * (i % 6)}s`,
+              animationDuration: `${9 + (i % 4) * 1.6}s`,
+            }}
+          >
+            <circle className="cs-halo" cx={n.x} cy={n.y} r={13} />
+            <circle className="cs-dot" cx={n.x} cy={n.y} r={5} />
+            <text className="cs-label" x={n.x} y={n.y + 17} textAnchor="middle">
+              {n.label}
+            </text>
+            <circle className="cs-hit" cx={n.x} cy={n.y} r={20} />
+          </g>
+        ))}
+      </svg>
     </div>
   );
 }
@@ -124,8 +157,18 @@ function Tags({ items }: { items: string[] }) {
    ------------------------------------------------------------------ */
 
 const MONTHS = [
-  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
 ];
 
 /** Compact range for the left gutter. Ranges inside one calendar year get
@@ -210,7 +253,9 @@ export default function HomePage() {
     const items = Array.from(
       root.querySelectorAll<HTMLElement>("[data-reveal]")
     );
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const reduce = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
 
     if (reduce) {
       items.forEach((el) => el.classList.add("is-in"));
@@ -284,36 +329,44 @@ export default function HomePage() {
         {/* ---------- opening statement ---------- */}
         <section className="ed-hero">
           <div className="ed-wrap">
-            <h1 data-reveal className="ed-hero-statement">
-              I build AI agents and the backends that keep them{" "}
-              <em>honest</em>.
-            </h1>
+            <div>
+              <h1 data-reveal className="ed-hero-statement">
+                I build AI agents and the backends that keep them{" "}
+                <em>honest</em>.
+              </h1>
 
-            <div data-reveal className="ed-hero-now">
-              <span className="ed-label ed-hero-now-label">Currently</span>
-              <span className="ed-hero-now-value">
-                AI Engineer at{" "}
-                <a href="https://pattern.com" target="_blank" rel="noreferrer">
-                  Pattern
-                </a>
-                , Pune, India
-              </span>
+              <div data-reveal className="ed-hero-now">
+                <span className="ed-label ed-hero-now-label">Currently</span>
+                <span className="ed-hero-now-value">
+                  AI Engineer at{" "}
+                  <a
+                    href="https://pattern.com"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Pattern
+                  </a>
+                  , Pune, India
+                </span>
+              </div>
+
+              <div data-reveal className="ed-hero-links">
+                {elsewhere.map(({ label, href, Icon }) => (
+                  <a
+                    key={label}
+                    href={href}
+                    {...(href.startsWith("mailto:")
+                      ? {}
+                      : { target: "_blank", rel: "noreferrer" })}
+                  >
+                    <Icon size={14} strokeWidth={1.75} aria-hidden="true" />
+                    {label}
+                  </a>
+                ))}
+              </div>
             </div>
 
-            <div data-reveal className="ed-hero-links">
-              {elsewhere.map(({ label, href, Icon }) => (
-                <a
-                  key={label}
-                  href={href}
-                  {...(href.startsWith("mailto:")
-                    ? {}
-                    : { target: "_blank", rel: "noreferrer" })}
-                >
-                  <Icon size={14} strokeWidth={1.75} aria-hidden="true" />
-                  {label}
-                </a>
-              ))}
-            </div>
+            <StackConstellation />
           </div>
         </section>
 
@@ -340,11 +393,10 @@ export default function HomePage() {
                   manual yarn planning and loom scheduling with an engine that
                   holds up in production — leading a team of five engineering
                   interns to do it. At Quark I shipped LLM systems for Japanese
-                  enterprises: retrieval over internal knowledge bases,
-                  document intelligence, and an agent that converts 2D CAD
-                  drawings into parametric 3D models. Earlier, at Kennemer, I
-                  scaled a Django and React platform past three thousand users
-                  a day.
+                  enterprises: retrieval over internal knowledge bases, document
+                  intelligence, and an agent that converts 2D CAD drawings into
+                  parametric 3D models. Earlier, at Kennemer, I scaled a Django
+                  and React platform past three thousand users a day.
                 </p>
                 <p>
                   I like owning a feature end to end — schema, API, interface —
@@ -360,6 +412,56 @@ export default function HomePage() {
                   places they probably don&apos;t belong <em>yet</em>.
                 </p>
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ---------- shipped ---------- */}
+        <section id="shipped" className="ed-section">
+          <div className="ed-wrap">
+            <div data-reveal className="ed-section-head">
+              <h2 className="ed-label">Shipped</h2>
+              <span className="ed-section-note">
+                on the web, free to try
+              </span>
+            </div>
+
+            <div className="ed-ships">
+              {shippedProducts.map((product) => (
+                <Link
+                  key={product.slug}
+                  href={`/shipped/${product.slug}`}
+                  data-reveal
+                  className="ed-ship"
+                >
+                  <div className="ed-ship-top">
+                    <span
+                      className="ed-ship-status"
+                      data-status={product.status}
+                    >
+                      <span className="ed-ship-dot" />
+                      {product.status}
+                    </span>
+                    {product.metric && (
+                      <span className="ed-ship-metric">{product.metric}</span>
+                    )}
+                  </div>
+
+                  <h3 className="ed-ship-name">{product.name}</h3>
+                  <p className="ed-ship-tagline">{product.tagline}</p>
+
+                  <div className="ed-ship-foot">
+                    <Tags items={product.stack.slice(0, 3)} />
+                    <span className="ed-ship-go">
+                      <ArrowUpRight
+                        size={15}
+                        strokeWidth={1.9}
+                        aria-hidden="true"
+                      />
+                    </span>
+                  </div>
+                </Link>
+              ))}
             </div>
           </div>
         </section>
@@ -479,7 +581,11 @@ export default function HomePage() {
               those three meet. If you have something in that territory, write
               to me.
             </p>
-            <a data-reveal href={`mailto:${EMAIL}`} className="ed-contact-email">
+            <a
+              data-reveal
+              href={`mailto:${EMAIL}`}
+              className="ed-contact-email"
+            >
               {EMAIL}
             </a>
             {/* Email is already the large link above, so it's dropped here. */}

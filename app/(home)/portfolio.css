@@ -163,6 +163,17 @@
   padding: 7.5rem 0 6rem;
   border-bottom: 1px solid var(--border);
 }
+.ed-hero .ed-wrap {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 3.5rem;
+  align-items: center;
+}
+@media (max-width: 900px) {
+  .ed-hero .ed-wrap {
+    grid-template-columns: 1fr;
+  }
+}
 .ed-hero-statement {
   font-family: var(--display);
   font-weight: 600;
@@ -241,6 +252,98 @@
   color: var(--accent);
 }
 
+/* ---------- hero constellation ----------
+   Doubles as the legend for the colour coding: dot colour is the same
+   domain hue the tech's tag carries everywhere else on the page. */
+
+.ed-constellation {
+  width: 100%;
+  max-width: 340px;
+  margin-left: auto;
+}
+.ed-constellation svg {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.cs-edges line {
+  stroke: var(--border-strong);
+  stroke-width: 1;
+}
+
+.cs-node {
+  --hue: var(--cat-none);
+  animation-name: cs-drift;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+.cs-node[data-cat="lang"] {
+  --hue: var(--cat-lang);
+}
+.cs-node[data-cat="ai"] {
+  --hue: var(--cat-ai);
+}
+.cs-node[data-cat="fw"] {
+  --hue: var(--cat-fw);
+}
+.cs-node[data-cat="infra"] {
+  --hue: var(--cat-infra);
+}
+
+.cs-dot {
+  fill: var(--hue);
+  transition: r 0.2s ease;
+}
+.cs-halo {
+  fill: none;
+  stroke: var(--hue);
+  stroke-width: 1;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.cs-label {
+  font-family: var(--mono);
+  font-size: 8.5px;
+  letter-spacing: 0.06em;
+  fill: var(--text-3);
+  opacity: 0.7;
+  transition: opacity 0.2s ease, fill 0.2s ease, transform 0.2s ease;
+}
+.cs-hit {
+  fill: transparent;
+}
+
+.cs-node:hover .cs-dot {
+  r: 7;
+}
+.cs-node:hover .cs-halo {
+  opacity: 0.45;
+}
+.cs-node:hover .cs-label {
+  opacity: 1;
+  fill: var(--hue);
+  transform: translateY(-2px);
+}
+
+/* Amplitude is deliberately under the dot radius, so the hairline edges
+   stay tucked beneath the dots instead of visibly detaching. */
+@keyframes cs-drift {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(1.5px, -2px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cs-node {
+    animation: none;
+  }
+}
+
 /* ---------- sections ---------- */
 
 .ed-section {
@@ -301,6 +404,342 @@
   .ed-prose p:first-child {
     font-size: 1.125rem;
   }
+}
+
+/* ---------- shipped: card grid on the home page ---------- */
+
+.ed-ships {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+@media (max-width: 760px) {
+  .ed-ships {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ed-ship {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1.15rem 1.25rem 1.1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  text-decoration: none;
+  transition: background 0.18s, border-color 0.18s, transform 0.18s;
+}
+.ed-ship:hover {
+  background: var(--surface-2);
+  border-color: var(--border-strong);
+  transform: translateY(-2px);
+}
+
+.ed-ship-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.ed-ship-status,
+.sp-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--mono);
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--cat-fw);
+}
+.ed-ship-status[data-status="beta"],
+.sp-status[data-status="beta"] {
+  color: var(--cat-infra);
+}
+/* Unfinished work recedes to neutral — it must not read as shipped. */
+.ed-ship-status[data-status="building"],
+.sp-status[data-status="building"] {
+  color: var(--text-3);
+}
+.ed-ship-dot,
+.sp-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: none;
+}
+.ed-ship-metric {
+  font-family: var(--mono);
+  font-size: 0.625rem;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.ed-ship-name {
+  font-family: var(--display);
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--text-1);
+  transition: color 0.18s;
+}
+.ed-ship:hover .ed-ship-name {
+  color: var(--accent);
+}
+.ed-ship-tagline {
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--text-2);
+  text-wrap: pretty;
+  flex: 1;
+}
+.ed-ship-foot {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.35rem;
+}
+.ed-ship-go {
+  color: var(--text-3);
+  flex: none;
+  transition: color 0.18s, transform 0.18s;
+}
+.ed-ship:hover .ed-ship-go {
+  color: var(--accent);
+  transform: translate(2px, -2px);
+}
+
+/* ---------- shipped: product detail page ---------- */
+
+.sp {
+  padding: 4rem 0 6rem;
+}
+.sp-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: var(--sans);
+  font-size: 0.8125rem;
+  color: var(--text-3);
+  text-decoration: none;
+  margin-bottom: 2.5rem;
+  transition: color 0.15s;
+}
+.sp-back:hover {
+  color: var(--accent);
+}
+
+.sp-head {
+  max-width: 46rem;
+  margin-bottom: 2.5rem;
+}
+.sp-title {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: clamp(2rem, 5vw, 3.25rem);
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+  color: var(--text-1);
+  margin: 0.7rem 0 0.6rem;
+}
+.sp-tagline {
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  color: var(--text-2);
+  max-width: 44ch;
+  text-wrap: pretty;
+}
+.sp-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-top: 1.75rem;
+}
+.sp-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--bg);
+  background: var(--accent);
+  text-decoration: none;
+  padding: 0.6rem 1.1rem;
+  border-radius: 9px;
+  transition: filter 0.15s;
+}
+.sp-cta:hover {
+  filter: brightness(1.1);
+}
+.sp-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.8125rem;
+  color: var(--text-2);
+  text-decoration: none;
+  padding: 0.6rem 0.95rem;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.sp-secondary:hover {
+  color: var(--text-1);
+  border-color: var(--border-strong);
+  background: var(--surface-2);
+}
+
+/* Demo frame. Fixed 16:9 either way, so an embed and the placeholder
+   occupy exactly the same space and the page doesn't reflow. */
+.sp-video {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  overflow: hidden;
+  background: var(--surface);
+  margin-bottom: 3.5rem;
+}
+.sp-video iframe,
+.sp-video video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+/* contain, not cover — a promo video should never be cropped to fit. */
+.sp-video video {
+  object-fit: contain;
+  background: #000;
+}
+.sp-video-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  color: var(--text-3);
+  text-align: center;
+  padding: 1.5rem;
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    var(--border-strong) 1px,
+    transparent 0
+  );
+  background-size: 22px 22px;
+}
+.sp-video-label {
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-top: 0.5rem;
+}
+.sp-video-hint {
+  font-size: 0.8125rem;
+  color: var(--text-3);
+  opacity: 0.75;
+}
+.sp-video-hint code {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--text-2);
+}
+
+.sp-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 15rem;
+  gap: 3.5rem;
+  align-items: start;
+}
+@media (max-width: 860px) {
+  .sp-body {
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+}
+
+.sp-h {
+  display: block;
+  padding-bottom: 0.7rem;
+  margin-bottom: 1.1rem;
+  border-bottom: 1px solid var(--border);
+}
+.sp-h--spaced {
+  margin-top: 2.5rem;
+}
+.sp-para {
+  font-size: 0.9375rem;
+  line-height: 1.72;
+  color: var(--text-2);
+  max-width: 68ch;
+  text-wrap: pretty;
+}
+.sp-para + .sp-para {
+  margin-top: 1.1rem;
+}
+
+.sp-features {
+  list-style: none;
+  display: grid;
+  gap: 0.6rem;
+}
+.sp-features li {
+  position: relative;
+  padding-left: 1.4rem;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--text-2);
+  max-width: 66ch;
+}
+.sp-features li::before {
+  content: "";
+  position: absolute;
+  left: 0.3rem;
+  top: 0.62em;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+/* Planned work: hollow marker and dimmer text, so it reads as intent
+   rather than as something you can go and use. */
+.sp-features--planned li {
+  color: var(--text-3);
+}
+.sp-features--planned li::before {
+  background: transparent;
+  border: 1px solid var(--text-3);
+}
+
+.sp-aside {
+  display: grid;
+  gap: 1.5rem;
+  padding: 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 11px;
+}
+.sp-meta {
+  display: grid;
+  gap: 0.5rem;
+}
+.sp-meta-value {
+  font-family: var(--mono);
+  font-size: 0.875rem;
+  color: var(--text-1);
+  font-variant-numeric: tabular-nums;
 }
 
 /* ---------- entry list (experience + work) ---------- */

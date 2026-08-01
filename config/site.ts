@@ -2,11 +2,13 @@ export const siteConfig = {
   name: "Aditya Sahani | Developer Portfolio",
   authorName: "Aditya Sahani",
   username: "sahaniaditya",
+  /** X handle, without the @. Distinct from `username`, which is GitHub. */
+  twitterHandle: "_sahani_aditya",
   description:
     "Aditya Sahani's portfolio - A modern, responsive Next.js portfolio for developers. This open-source template can be customized to showcase your own skills, projects, and professional experience.",
   url: "https://adityasahani.netlify.app/",
   links: {
-    twitter: "https://adityasahani.netlify.app/",
+    twitter: "https://x.com/_sahani_aditya",
     github: "https://github.com/sahaniaditya",
   },
   ogImage: "https://adityasahani.netlify.app/",
